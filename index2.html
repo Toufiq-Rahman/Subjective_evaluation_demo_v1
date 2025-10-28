@@ -475,7 +475,8 @@
   }
   function parseCsv(txt){
     // very small CSV parser for AI CSV: expects header row with filename,ai_label,ai_prob,explainer_url
-    const lines = txt.split(/?
+    const lines = txt.split(/
+?
 /).filter(Boolean);
     if(lines.length<2) return {};
     const hdr = splitCsvLine(lines[0]).map(h=>h.trim().toLowerCase());
@@ -499,7 +500,8 @@
     return map;
   }
   function parseGenericCsv(txt){
-    const lines = txt.split(/?
+    const lines = txt.split(/
+?
 /).filter(Boolean);
     if(lines.length===0) return {header:[], rows:[]};
     const header = splitCsvLine(lines[0]).map(s=>s.trim().toLowerCase());

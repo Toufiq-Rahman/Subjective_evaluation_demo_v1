@@ -294,18 +294,33 @@
     const f = clipsCsvInput.files && clipsCsvInput.files[0];
     if(!f) return;
     const reader = new FileReader();
-    reader.onload = async ()=>{
-      const rows = parseGenericCsv(reader.result);
-      const urlIdx = rows.header.indexOf('url');
-      const nameIdx = rows.header.indexOf('filename');
-      if(urlIdx===-1||nameIdx===-1){ alert('Clips CSV must have columns: url,filename'); return; }
-      const list = rows.rows.map(r=>({url:r[urlIdx], name:r[nameIdx]})).filter(x=>x.url);
-      // Build per-file metadata map from any extra columns in clips.csv
+    reader.onload = ()=>{
+      const obj = parseGenericCsv(reader.result);
+      const header = obj.header;
+      const urlIdx  = obj.urlIdx;
+      const nameIdx = obj.nameIdx;
+      if(urlIdx===-1 || nameIdx===-1){
+        alert('Clips CSV must have columns url,filename. Detected: ' + header.join(', '));
+        return;
+      }
+      const list = obj.rows
+        .map(r=>({url:r[urlIdx], name:r[nameIdx], raw:r}))
+        .filter(x=>x.url && x.name);
+      // save extra columns to clipMeta (e.g., gt_label)
       clipMeta = {};
-      rows.rows.forEach(r=>{
+      obj.rows.forEach(r=>{
         const name = r[nameIdx]; if(!name) return;
         const meta = {};
-        rows.header.forEach((h,idx)=>{ if(h!=='url' && h!=='filename') meta[h] = r[idx]; });
+        header.forEach((h,idx)=>{ if(h!=='url' && h!=='filename') meta[h] = r[idx]; });
+        clipMeta[name] = meta;
+      });
+      // streaming mode (no prefetch)
+      clips = list.map(item => ({ name: item.name, url: item.url, file: null }));
+      loadedCount.textContent = clips.length;
+      alert('Loaded ' + clips.length + ' remote clips (streaming).');
+    };
+    reader.readAsText(f);
+  });
         clipMeta[name] = meta;
       });
       // STREAM DIRECTLY: don't prefetch; just use the URLs
@@ -447,6 +462,10 @@
     const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join(','))].join('\n');
     downloadText(csv, `pcg_subjective_${session.rater}_${ts()}.csv`, 'text/csv');
   });
+    const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join(','))].join('
+');
+    downloadText(csv, `pcg_subjective_${session.rater}_${ts()}.csv`, 'text/csv');
+  });
 
   dlJson.addEventListener('click', ()=>{
     const blob = JSON.stringify({session, responses}, null, 2);
@@ -505,16 +524,19 @@
     return map;
   }
   function parseGenericCsv(txt){
-    const lines = txt.split(/
-?
-/).filter(Boolean);
-    if(lines.length===0) return {header:[], rows:[]};
-    const header = splitCsvLine(lines[0]).map(s=>s.trim().toLowerCase());
+    // Robust CSV: handle BOM, Windows/Mac newlines, comma/semicolon delimiter
+    const lines = txt.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(Boolean);
+    if(lines.length===0) return {header:[], rows:[], urlIdx:-1, nameIdx:-1};
+    const sniff = s => (s.split(";").length > s.split(",").length ? ";" : ",");
+    const delim = sniff(lines[0]);
+    const header = splitCsvLine(lines[0], delim).map(s=>s.replace(/^\ufeff/, '').trim().toLowerCase());
+    let urlIdx  = header.indexOf('url');      if(urlIdx===-1)  urlIdx  = 0;
+    let nameIdx = header.indexOf('filename'); if(nameIdx===-1) nameIdx = 1;
     const rows = [];
-    for(let i=1;i<lines.length;i++) rows.push(splitCsvLine(lines[i]));
-    return {header, rows};
+    for(let i=1;i<lines.length;i++) rows.push(splitCsvLine(lines[i], delim));
+    return {header, rows, urlIdx, nameIdx, delim};
   }
-  function splitCsvLine(line){
+  function splitCsvLine(line, delim=','){
     const out=[]; let cur=''; let inQ=false;
     for(let i=0;i<line.length;i++){
       const c=line[i];
@@ -523,7 +545,7 @@
         else if(c==='"'){ inQ=false; }
         else cur+=c;
       }else{
-        if(c===','){ out.push(cur); cur=''; }
+        if(c===delim){ out.push(cur); cur=''; }
         else if(c==='"'){ inQ=true; }
         else cur+=c;
       }

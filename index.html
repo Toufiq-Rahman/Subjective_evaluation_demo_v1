@@ -264,6 +264,7 @@
 
   let clips = [];           // [{name, url, file}]
   let aiMap = {};           // filename -> {ai_label, ai_prob, explainer_url}
+  let clipMeta = {};        // filename -> metadata from clips.csv (e.g., gt_label, site, device)
   let session = null;       // {rater, items:[{clip_idx, arm, is_repeat}], started_at}
   let responses = [];       // per item index
   let curIdx = 0;
@@ -299,6 +300,14 @@
       const nameIdx = rows.header.indexOf('filename');
       if(urlIdx===-1||nameIdx===-1){ alert('Clips CSV must have columns: url,filename'); return; }
       const list = rows.rows.map(r=>({url:r[urlIdx], name:r[nameIdx]})).filter(x=>x.url);
+      // Build per-file metadata map from any extra columns in clips.csv
+      clipMeta = {};
+      rows.rows.forEach(r=>{
+        const name = r[nameIdx]; if(!name) return;
+        const meta = {};
+        rows.header.forEach((h,idx)=>{ if(h!=='url' && h!=='filename') meta[h] = r[idx]; });
+        clipMeta[name] = meta;
+      });
       // fetch as blobs so audio plays even with CORS disabled if same-origin; otherwise rely on direct URL
       const fetched = [];
       for(const item of list){
@@ -435,11 +444,19 @@
   }
 
   dlCsv.addEventListener('click', ()=>{
-    const header = ['rater','session_started','case_idx','clip_name','arm','is_repeat','label','severity','confidence','quality','used_expl','replay_count','elapsed_s'];
-    const rows = responses.filter(Boolean).map(r=>[
-      session.rater, session.started_at, r.case_idx, r.clip_name, r.arm, r.is_repeat, r.label, r.severity, r.confidence, r.quality, r.used_expl, r.replay_count, r.elapsed_s
-    ]);
-    const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join(','))].join('\n');
+    const header = ['rater','session_started','case_idx','clip_name','arm','is_repeat','label','severity','confidence','quality','used_expl','replay_count','elapsed_s','gt_label','ai_label','ai_prob'];
+    const rows = responses.filter(Boolean).map(r=>{
+      const meta = clipMeta[r.clip_name] || {};
+      const ai = aiMap[r.clip_name] || {};
+      return [
+        session.rater, session.started_at, r.case_idx, r.clip_name, r.arm, r.is_repeat, r.label, r.severity, r.confidence, r.quality, r.used_expl, r.replay_count, r.elapsed_s,
+        meta.gt_label || '', ai.ai_label || '', ai.ai_prob || ''
+      ];
+    });
+    const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join('
+').replace(/
+/g, ''))].join('
+');
     downloadText(csv, `pcg_subjective_${session.rater}_${ts()}.csv`, 'text/csv');
   });
 

@@ -1,295 +1,216 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PCG Subjective Evaluation</title>
-  <style>
-    :root{--bg:#0f172a;--card:#111827;--ink:#e5e7eb;--muted:#9ca3af;--accent:#22d3ee;--danger:#f43f5e}
-    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,Apple Color Emoji,Segoe UI Emoji}
-    body{margin:0;background:linear-gradient(180deg,#0b1020,#0f172a 40%);color:var(--ink)}
-    .wrap{max-width:980px;margin:24px auto;padding:16px}
-    .title{font-size:28px;font-weight:800;letter-spacing:.2px;margin:4px 0 16px}
-    .card{background:rgba(255,255,255,0.04);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:16px;margin:12px 0}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
-    .col{flex:1 1 260px}
-    label.small{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-    input[type="number"], select, input[type="text"], input[type="file"], button, .pill{
-      width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:#0b1224;color:var(--ink)
-    }
-    button{cursor:pointer;border:1px solid rgba(34,211,238,.35);background:linear-gradient(180deg,#0e1a30,#0b1326);transition:transform .05s ease,box-shadow .15s ease}
-    button:hover{box-shadow:0 8px 24px rgba(34,211,238,.15)}
-    button:active{transform:translateY(1px)}
-    .btn-row{display:flex;gap:10px;flex-wrap:wrap}
-    .tag{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.1);color:var(--muted);font-size:12px}
-    .muted{color:var(--muted)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-    .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:10px 0}
-    .h2{font-size:18px;font-weight:700;margin:6px 0 2px}
-    .large{font-size:16px}
-    audio{width:100%}
-    .hidden{display:none}
-    .accent{color:var(--accent)}
-    .danger{color:var(--danger)}
-    .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:16px}
-    .pill{display:inline-flex;align-items:center;width:auto;padding:6px 10px}
-    .kps{display:flex;gap:8px;flex-wrap:wrap}
-    .kps .pill{background:#0b1224;border:1px solid rgba(255,255,255,.12)}
-    .progress{height:8px;background:#0b1224;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
-    .bar{height:100%;background:linear-gradient(90deg,#22d3ee,#818cf8);width:0%}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PCG Subjective Evaluation</title>
+<style>
+  :root{
+    --bg:#0f1623; --panel:#121a28; --muted:#8aa0b6; --text:#e7eef7; --brand:#3ea0ff; --brand2:#6ac3ff;
+    --ok:#2ecc71; --warn:#f39c12; --bad:#e74c3c;
+    --radius:14px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    background: radial-gradient(1000px 600px at 20% -10%, #1e3350 0%, transparent 60%), var(--bg); color:var(--text);
+  }
+  .wrap{ max-width:1100px; margin:40px auto 80px; padding:0 16px; }
+  h1{ font-weight:800; letter-spacing:.3px; margin:0 0 18px; font-size:42px; }
+  .card{
+    background:linear-gradient(180deg, #0f1a2a 0%, #0e1725 100%);
+    border:1px solid #23344c; border-radius:var(--radius); padding:22px 22px 14px; box-shadow:0 6px 30px rgba(0,0,0,.25);
+  }
+  .row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+  @media (max-width:980px){ .row{ grid-template-columns:1fr; } }
+  label{ display:block; font-size:14px; color:var(--muted); margin:6px 0 6px; }
+  input[type="text"], input[type="number"], select{
+    width:100%; padding:12px 14px; border-radius:12px; border:1px solid #2a3a54; outline:none; background:#0c1422; color:var(--text)
+  }
+  input[type="file"]{ width:100%; }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 16px; border-radius:12px; border:1px solid #2a3a54; background:#0d1828; color:var(--text);
+    cursor:pointer; transition:.15s transform ease, .2s background ease, .2s border ease;
+  }
+  .btn:active{ transform:scale(.98); }
+  .btn.primary{ background:linear-gradient(180deg, var(--brand) 0%, var(--brand2) 100%); border-color:transparent; color:#031020; font-weight:700; }
+  .footer{ color:var(--muted); margin-top:10px; font-size:14px; }
+  .pill{ display:inline-block; padding:6px 10px; border:1px solid #2a3a54; border-radius:999px; color:var(--muted); font-size:12px; margin-right:8px; }
+  .section-title{ font-size:20px; font-weight:800; margin:18px 0 8px; }
+  .stack{ display:flex; gap:10px; flex-wrap:wrap; }
+  .center{ display:flex; align-items:center; justify-content:center; }
+  .hidden{ display:none !important; }
+
+  /* Session UI */
+  .session{ margin-top:26px; }
+  .case-card{ background:#0e1726; border:1px solid #24344e; border-radius:var(--radius); padding:18px; }
+  .case-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .case-title{ font-weight:800; font-size:18px; }
+  audio{ width:100%; margin:12px 0; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:980px){ .grid2{ grid-template-columns:1fr; } }
+  .group{ background:#0b1320; border:1px solid #253754; border-radius:12px; padding:12px; }
+  .group h3{ margin:0 0 6px; font-size:14px; color:#b9c9db; text-transform:uppercase; letter-spacing:.8px; }
+  .choices{ display:flex; gap:8px; flex-wrap:wrap; }
+  .choice{
+    padding:8px 10px; border:1px solid #2a3a54; border-radius:10px; cursor:pointer; color:#cfe0f2; background:#0b1422;
+  }
+  .choice.active{ border-color:var(--brand); box-shadow: 0 0 0 2px rgba(62,160,255,.2) inset; }
+  .muted{ color:var(--muted); }
+  .ai-panel{ border-left:3px solid var(--brand); padding-left:12px; }
+  .end-card{ text-align:center; padding:24px; border:1px dashed #395379; border-radius:14px; }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="title">PCG Subjective Evaluation</div>
+<div class="wrap">
+  <h1>PCG Subjective Evaluation</h1>
 
-    <!-- Admin / Setup -->
-    <div class="card" id="setupCard">
-      <div class="h2">1) Load PCG clips</div>
-      <div class="grid">
-        <div>
-          <label class="small">Select WAV files (multiple)</label>
-          <input id="fileInput" type="file" accept="audio/wav" multiple />
-        </div>
-        <div>
-          <label class="small">Optional AI outputs (CSV: filename,ai_label,ai_prob,explainer_url)</label>
-          <input id="aiCsvInput" type="file" accept=".csv" />
-        </div>
-        <div>
-          <label class="small">Clips CSV (remote URLs): columns url,filename</label>
-          <input id="clipsCsvInput" type="file" accept=".csv" />
-        </div>
+  <div class="card" id="loaderCard">
+    <div class="row">
+      <div>
+        <div class="section-title">1) Load PCG clips</div>
+        <label>Select WAV files (multiple)</label>
+        <input id="wavInput" type="file" accept=".wav" multiple />
       </div>
-
-      <div class="divider"></div>
-
-      <div class="h2">2) Session settings</div>
-      <div class="grid">
-        <div>
-          <label class="small">Rater ID (e.g., doc01)</label>
-          <input id="raterId" type="text" placeholder="doc01" />
-        </div>
-        <div>
-          <label class="small">Clips per session</label>
-          <input id="nClips" type="number" min="1" max="200" value="30" />
-        </div>
-        <div>
-          <label class="small">Repeat percentage (for intra-rater reliability)</label>
-          <input id="repeatPct" type="number" min="0" max="50" value="10" />
-        </div>
-        <div>
-          <label class="small">Arm / Condition</label>
-          <select id="arm">
-            <option value="blind">Clinician-Only (Blind)</option>
-            <option value="assisted">Clinician + AI (Assisted)</option>
-            <option value="mixed">Mixed (50/50 per session)</option>
-          </select>
-        </div>
+      <div>
+        <label>Optional AI outputs (CSV: filename,ai_label,ai_prob,explainer_url)</label>
+        <input id="aiCsvInput" type="file" accept=".csv" />
       </div>
-
-      <div class="divider"></div>
-
-      <div class="btn-row">
-        <button id="startBtn">Start Session</button>
-        <span class="tag"><span>Loaded clips:</span><b id="loadedCount">0</b></span>
-        <span class="tag"><span>AI CSV:</span><b id="aiLoaded">none</b></span>
-      </div>
-      <div class="muted" style="margin-top:6px">All runs are local in your browser. No upload to any server.</div>
-    </div>
-
-    <!-- Session / Evaluation -->
-    <div class="card hidden" id="evalCard">
-      <div class="row" style="align-items:center;justify-content:space-between">
-        <div class="kps">
-          <span class="pill">Rater: <b id="raterTag" style="margin-left:6px"></b></span>
-          <span class="pill">Arm: <b id="armTag" style="margin-left:6px"></b></span>
-          <span class="pill">Item <span id="idxNow">0</span>/<span id="idxTotal">0</span></span>
-          <span class="pill">Replays: <span id="replays">0</span></span>
-          <span class="pill">Time: <span id="elapsed">0.0</span>s</span>
-        </div>
-        <div style="min-width:180px;flex:0 0 180px">
-          <div class="progress"><div class="bar" id="pbar"></div></div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="grid">
-        <div class="col">
-          <div class="h2">PCG Audio</div>
-          <audio id="player" controls preload="auto"></audio>
-          <div class="muted" id="filenameHint" style="margin-top:6px"></div>
-        </div>
-        <div class="col">
-          <div class="h2">Label</div>
-          <label class="small">Primary label</label>
-          <select id="labelSel">
-            <option value="">— select —</option>
-            <option>Normal</option>
-            <option>Systolic Murmur</option>
-            <option>Diastolic Murmur</option>
-            <option>Other/Artifact</option>
-          </select>
-
-          <div class="row" style="margin-top:10px">
-            <div class="col">
-              <label class="small">Murmur severity</label>
-              <select id="severity">
-                <option>None</option>
-                <option>I/VI</option>
-                <option>II/VI</option>
-                <option>III/VI</option>
-                <option>IV/VI</option>
-                <option>V/VI</option>
-                <option>VI/VI</option>
-              </select>
-            </div>
-            <div class="col">
-              <label class="small">Confidence (1–5)</label>
-              <select id="confidence">
-                <option>1</option>
-                <option>2</option>
-                <option selected>3</option>
-                <option>4</option>
-                <option>5</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:10px">
-            <div class="col">
-              <label class="small">Recording quality (1–5)</label>
-              <select id="quality">
-                <option>1</option>
-                <option>2</option>
-                <option selected>3</option>
-                <option>4</option>
-                <option>5</option>
-              </select>
-            </div>
-            <div class="col">
-              <label class="small">Used explanation?</label>
-              <select id="usedExpl">
-                <option>No</option>
-                <option>Yes</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="assistBlock" class="card" style="margin:12px 0;display:none">
-        <div class="h2">AI Assistance</div>
-        <div class="grid">
-          <div>
-            <div class="muted">AI Label</div>
-            <div id="aiLbl" class="large">—</div>
-          </div>
-          <div>
-            <div class="muted">AI Probability</div>
-            <div id="aiProb" class="large">—</div>
-          </div>
-        </div>
-        <img id="aiImg" alt="AI explanation" style="max-width:100%;margin-top:8px;border-radius:12px;border:1px solid rgba(255,255,255,.12);display:none" />
-      </div>
-
-      <div class="btn-row" style="justify-content:space-between">
-        <button id="prevBtn">◀ Prev</button>
-        <div class="btn-row">
-          <button id="saveBtn">Save & Next ▶</button>
-          <button id="endBtn" class="danger">Finish Session & Export</button>
-        </div>
+      <div>
+        <label>Clips CSV (remote URLs): columns <code>url,filename</code> (+optional columns like <code>gt_label</code>)</label>
+        <input id="clipsCsvInput" type="file" accept=".csv" />
       </div>
     </div>
 
-    <!-- Export / Results -->
-    <div class="card hidden" id="exportCard">
-      <div class="h2">Session complete</div>
-      <p class="muted">Download your data below. Keep the CSV for analysis (McNemar, κ/α, etc.).</p>
-      <div class="btn-row">
-        <button id="dlCsv">Download Responses (CSV)</button>
-        <button id="dlJson">Download Session (JSON)</button>
-        <button id="restartBtn">Start New Session</button>
+    <div class="section-title">2) Session settings</div>
+    <div class="row">
+      <div>
+        <label>Rater ID (e.g., doc01)</label>
+        <input id="raterId" type="text" placeholder="doc01" value="doc01" />
+      </div>
+      <div>
+        <label>Clips per session</label>
+        <input id="clipsPerSession" type="number" min="1" value="30" />
+      </div>
+      <div>
+        <label>Repeat percentage (for intra-rater reliability)</label>
+        <input id="repeatPct" type="number" min="0" max="50" value="10" />
       </div>
     </div>
 
-    <div class="footer">Local-only tool • Built for rapid clinician labeling of PCG clips • v1.0</div>
+    <div class="row">
+      <div>
+        <label>Arm / Condition</label>
+        <select id="armSel">
+          <option>Clinician-Only (Blind)</option>
+          <option>AI-Assisted</option>
+          <option>Mixed (50% blind)</option>
+        </select>
+      </div>
+      <div class="center">
+        <button id="startBtn" class="btn primary" style="width:100%;">Start Session</button>
+      </div>
+      <div class="center">
+        <div class="pill" id="loadedCountPill">Loaded clips: 0</div>
+        <div class="pill" id="aiPill">AI CSV: none</div>
+      </div>
+    </div>
+
+    <div class="footer">All runs are local in your browser. No upload to any server.</div>
   </div>
 
+  <!-- Session UI -->
+  <div class="session" id="sessionUI" class="hidden"></div>
+</div>
+
 <script>
-(function(){
-  const fileInput = document.getElementById('fileInput');
-  const aiCsvInput = document.getElementById('aiCsvInput');
-  const clipsCsvInput = document.getElementById('clipsCsvInput');
-  const loadedCount = document.getElementById('loadedCount');
-  const aiLoaded = document.getElementById('aiLoaded');
-  const nClips = document.getElementById('nClips');
-  const repeatPct = document.getElementById('repeatPct');
-  const armSel = document.getElementById('arm');
-  const raterId = document.getElementById('raterId');
-  const startBtn = document.getElementById('startBtn');
-
-  const setupCard = document.getElementById('setupCard');
-  const evalCard = document.getElementById('evalCard');
-  const exportCard = document.getElementById('exportCard');
-
-  const raterTag = document.getElementById('raterTag');
-  const armTag = document.getElementById('armTag');
-  const idxNow = document.getElementById('idxNow');
-  const idxTotal = document.getElementById('idxTotal');
-  const pbar = document.getElementById('pbar');
-  const replaysSpan = document.getElementById('replays');
-  const elapsedSpan = document.getElementById('elapsed');
-
-  const player = document.getElementById('player');
-  const filenameHint = document.getElementById('filenameHint');
-  const labelSel = document.getElementById('labelSel');
-  const severitySel = document.getElementById('severity');
-  const confSel = document.getElementById('confidence');
-  const qualSel = document.getElementById('quality');
-  const usedExplSel = document.getElementById('usedExpl');
-
-  const assistBlock = document.getElementById('assistBlock');
-  const aiLbl = document.getElementById('aiLbl');
-  const aiProb = document.getElementById('aiProb');
-  const aiImg = document.getElementById('aiImg');
-
-  const prevBtn = document.getElementById('prevBtn');
-  const saveBtn = document.getElementById('saveBtn');
-  const endBtn = document.getElementById('endBtn');
-
-  const dlCsv = document.getElementById('dlCsv');
-  const dlJson = document.getElementById('dlJson');
-  const restartBtn = document.getElementById('restartBtn');
+  // ---------- Globals ----------
+  const wavInput       = document.getElementById('wavInput');
+  const clipsCsvInput  = document.getElementById('clipsCsvInput');
+  const aiCsvInput     = document.getElementById('aiCsvInput');
+  const raterIdInput   = document.getElementById('raterId');
+  const clipsPerInput  = document.getElementById('clipsPerSession');
+  const repeatInput    = document.getElementById('repeatPct');
+  const armSel         = document.getElementById('armSel');
+  const startBtn       = document.getElementById('startBtn');
+  const loadedCountPill= document.getElementById('loadedCountPill');
+  const aiPill         = document.getElementById('aiPill');
+  const sessionUI      = document.getElementById('sessionUI');
 
   let clips = [];           // [{name, url, file}]
   let aiMap = {};           // filename -> {ai_label, ai_prob, explainer_url}
-  let clipMeta = {};        // filename -> metadata from clips.csv (e.g., gt_label, site, device)
-  let session = null;       // {rater, items:[{clip_idx, arm, is_repeat}], started_at}
+  let clipMeta = {};        // filename -> metadata from clips.csv (e.g., gt_label)
+  let session = null;       // {rater, items:[{clip_idx, arm, is_repeat, show_ai}], started_at}
   let responses = [];       // per item index
-  let curIdx = 0;
-  let timer = null;
-  let startedAt = null;
-  let replayCount = 0;
 
-  fileInput.addEventListener('change', ()=>{
-    const files = Array.from(fileInput.files||[]);
-    clips = files.map(f=>({name:f.name,url:URL.createObjectURL(f),file:f}));
-    loadedCount.textContent = clips.length;
+  // ---------- Helpers ----------
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  function ts(){
+    const d=new Date();
+    const pad=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  }
+  function escapeCsv(x){
+    const s = String(x ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }
+  function downloadText(txt, name, type='text/plain'){
+    const b = new Blob([txt], {type}); const u = URL.createObjectURL(b);
+    const a = document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(u); a.remove(); }, 0);
+  }
+
+  // ===== robust CSV parsing (handles BOM + ; delimiter + spaces) =====
+  function parseGenericCsv(txt){
+    const lines = txt.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(Boolean);
+    if(lines.length===0) return {header:[], rows:[], urlIdx:-1, nameIdx:-1};
+    const sniff = s => (s.split(";").length > s.split(",").length ? ";" : ",");
+    const delim = sniff(lines[0]);
+
+    const header = splitCsvLine(lines[0], delim).map(
+      s => s.replace(/^\uFEFF/, '').trim().toLowerCase()
+    );
+    // tolerate missing headers → default first two cols
+    let urlIdx  = header.indexOf('url');      if(urlIdx===-1)  urlIdx  = 0;
+    let nameIdx = header.indexOf('filename'); if(nameIdx===-1) nameIdx = 1;
+
+    const rows = [];
+    for(let i=1;i<lines.length;i++) rows.push(splitCsvLine(lines[i], delim));
+    return {header, rows, urlIdx, nameIdx, delim};
+  }
+  function splitCsvLine(line, delim=","){
+    const out=[]; let cur=''; let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(inQ){
+        if(c === '"' && line[i+1] === '"'){ cur+='"'; i++; }
+        else if(c === '"'){ inQ=false; }
+        else cur+=c;
+      }else{
+        if(c === delim){ out.push(cur); cur=''; }
+        else if(c === '"'){ inQ=true; }
+        else cur+=c;
+      }
+    }
+    out.push(cur);
+    return out.map(s=>s.trim());
+  }
+
+  // ---------- Loaders ----------
+  wavInput.addEventListener('change', ()=>{
+    clips = [];
+    for(const f of wavInput.files){
+      const u = URL.createObjectURL(f);
+      clips.push({name:f.name, url:u, file:f});
+    }
+    loadedCountPill.textContent = `Loaded clips: ${clips.length}`;
   });
 
-  aiCsvInput.addEventListener('change', ()=>{
-    const f = aiCsvInput.files && aiCsvInput.files[0];
-    if(!f){aiLoaded.textContent='none'; return;}
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      aiMap = parseCsv(reader.result);
-      aiLoaded.textContent = Object.keys(aiMap).length + ' rows';
-    };
-    reader.readAsText(f);
-  });
-
-  // NEW: Load remote clips from CSV (url,filename)
+  // NEW: Load remote clips from CSV (url,filename + extras)
   clipsCsvInput.addEventListener('change', ()=>{
     const f = clipsCsvInput.files && clipsCsvInput.files[0];
     if(!f) return;
@@ -299,261 +220,248 @@
       const header = obj.header;
       const urlIdx  = obj.urlIdx;
       const nameIdx = obj.nameIdx;
-      if(urlIdx===-1 || nameIdx===-1){
-        alert('Clips CSV must have columns url,filename. Detected: ' + header.join(', '));
-        return;
-      }
-      const list = obj.rows
-        .map(r=>({url:r[urlIdx], name:r[nameIdx], raw:r}))
-        .filter(x=>x.url && x.name);
-      // save extra columns to clipMeta (e.g., gt_label)
+      // Build list
+      const list = obj.rows.map(r=>({url:r[urlIdx], name:r[nameIdx], raw:r}))
+                           .filter(x=>x.url && x.name);
+      // Save extra columns (e.g., gt_label) for export
       clipMeta = {};
       obj.rows.forEach(r=>{
-        const name = r[nameIdx]; if(!name) return;
+        const nm = r[nameIdx]; if(!nm) return;
         const meta = {};
         header.forEach((h,idx)=>{ if(h!=='url' && h!=='filename') meta[h] = r[idx]; });
-        clipMeta[name] = meta;
+        clipMeta[nm] = meta;
       });
-      // streaming mode (no prefetch)
+      // STREAM DIRECTLY (no prefetch)
       clips = list.map(item => ({ name: item.name, url: item.url, file: null }));
-      loadedCount.textContent = clips.length;
+      loadedCountPill.textContent = `Loaded clips: ${clips.length}`;
       alert('Loaded ' + clips.length + ' remote clips (streaming).');
-    };
-    reader.readAsText(f);
-  });
-        clipMeta[name] = meta;
-      });
-      // STREAM DIRECTLY: don't prefetch; just use the URLs
-      clips = list.map(item => ({
-        name: item.name || basename(item.url),
-        url: item.url,
-        file: null
-      }));
-      loadedCount.textContent = clips.length;
-      alert('Loaded ' + clips.length + ' remote clips (streaming).');
+      console.log('Clips header:', header, 'Count:', clips.length);
     };
     reader.readAsText(f);
   });
 
-  startBtn.addEventListener('click', ()=>{
-    if(clips.length===0){alert('Please select WAV files.');return;}
-    const n = clamp(parseInt(nClips.value||'30',10),1,Math.min(200,clips.length));
-    const rp = clamp(parseInt(repeatPct.value||'10',10),0,50);
-    const arm = armSel.value;
-    const rater = (raterId.value||'rater01').trim();
-
-    const baseIdxs = shuffle([...Array(clips.length).keys()]).slice(0,n);
-    const repeats = Math.floor(n*rp/100);
-    const repeatIdxs = shuffle(baseIdxs).slice(0,repeats);
-
-    let items = baseIdxs.map(i=>({clip_idx:i, arm:arm, is_repeat:false}));
-    if(arm==='mixed'){
-      items.forEach((it,k)=>{it.arm = (k%2===0)?'blind':'assisted'});
-    }
-    // insert repeats at random positions
-    const injected = repeatIdxs.map(i=>({clip_idx:i, arm: arm==='mixed'? (Math.random()<0.5?'blind':'assisted'):arm, is_repeat:true}));
-    items = interleaveRandom(items, injected);
-
-    session = {rater, started_at: new Date().toISOString(), items};
-    responses = new Array(items.length).fill(null);
-
-    raterTag.textContent = rater;
-    armTag.textContent = arm.charAt(0).toUpperCase()+arm.slice(1);
-    idxTotal.textContent = items.length;
-
-    setupCard.classList.add('hidden');
-    evalCard.classList.remove('hidden');
-
-    curIdx = 0;
-    loadItem(0);
-  });
-
-  function loadItem(k){
-    if(k<0||k>=session.items.length) return;
-    curIdx = k;
-    const it = session.items[k];
-    const clip = clips[it.clip_idx];
-
-    // reset UI
-    player.src = clip.url;
-    filenameHint.textContent = `File: ${clip.name}${it.is_repeat?' • duplicate (for reliability)':''}`;
-    labelSel.value = responses[k]?.label||'';
-    severitySel.value = responses[k]?.severity||'None';
-    confSel.value = responses[k]?.confidence||'3';
-    qualSel.value = responses[k]?.quality||'3';
-    usedExplSel.value = responses[k]?.used_expl||'No';
-
-    const ai = aiMap[clip.name];
-    const showAssist = (it.arm==='assisted') && ai;
-    assistBlock.style.display = showAssist ? 'block' : 'none';
-    aiLbl.textContent = showAssist ? (ai.ai_label||'—') : '—';
-    aiProb.textContent = showAssist ? (ai.ai_prob||'—') : '—';
-    if(showAssist && ai.explainer_url){ aiImg.src = ai.explainer_url; aiImg.style.display='block'; }
-    else { aiImg.style.display='none'; aiImg.removeAttribute('src'); }
-
-    // progress
-    idxNow.textContent = (k+1);
-    const pct = Math.round(((k)/session.items.length)*100);
-    pbar.style.width = pct+"%";
-
-    // timer & replays
-    if(timer) clearInterval(timer);
-    startedAt = performance.now();
-    replayCount = 0; replaysSpan.textContent = '0';
-    timer = setInterval(()=>{
-      const s = (performance.now()-startedAt)/1000;
-      elapsedSpan.textContent = s.toFixed(1);
-    }, 100);
-  }
-
-  player.addEventListener('play', ()=>{ replayCount++; replaysSpan.textContent = String(replayCount); });
-
-  prevBtn.addEventListener('click', ()=>{
-    savePartial(false);
-    loadItem(Math.max(0,curIdx-1));
-  });
-
-  saveBtn.addEventListener('click', ()=>{
-    if(!savePartial(true)) return;
-    const next = curIdx+1;
-    if(next<session.items.length) loadItem(next);
-    else finish();
-  });
-
-  endBtn.addEventListener('click', finish);
-
-  function savePartial(strict){
-    const label = labelSel.value;
-    if(strict && !label){ alert('Please select a primary label.'); return false; }
-    const elapsed_s = ((performance.now()-startedAt)/1000).toFixed(2);
-    responses[curIdx] = {
-      case_idx: curIdx+1,
-      clip_name: clips[session.items[curIdx].clip_idx].name,
-      arm: session.items[curIdx].arm,
-      is_repeat: session.items[curIdx].is_repeat,
-      label,
-      severity: severitySel.value,
-      confidence: confSel.value,
-      quality: qualSel.value,
-      used_expl: usedExplSel.value,
-      replay_count: replayCount,
-      elapsed_s
-    };
-    return true;
-  }
-
-  function finish(){
-    if(timer) clearInterval(timer);
-    pbar.style.width = '100%';
-    evalCard.classList.add('hidden');
-    exportCard.classList.remove('hidden');
-  }
-
-  dlCsv.addEventListener('click', ()=>{
-    const header = ['rater','session_started','case_idx','clip_name','arm','is_repeat','label','severity','confidence','quality','used_expl','replay_count','elapsed_s','gt_label','ai_label','ai_prob'];
-    const rows = responses.filter(Boolean).map(r=>{
-      const meta = clipMeta[r.clip_name] || {};
-      const ai = aiMap[r.clip_name] || {};
-      return [
-        session.rater, session.started_at, r.case_idx, r.clip_name, r.arm, r.is_repeat, r.label, r.severity, r.confidence, r.quality, r.used_expl, r.replay_count, r.elapsed_s,
-        meta.gt_label || '', ai.ai_label || '', ai.ai_prob || ''
-      ];
-    });
-    const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join(','))].join('\n');
-    downloadText(csv, `pcg_subjective_${session.rater}_${ts()}.csv`, 'text/csv');
-  });
-    const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join(','))].join('
-');
-    downloadText(csv, `pcg_subjective_${session.rater}_${ts()}.csv`, 'text/csv');
-  });
-
-  dlJson.addEventListener('click', ()=>{
-    const blob = JSON.stringify({session, responses}, null, 2);
-    downloadText(blob, `pcg_subjective_${session.rater}_${ts()}.json`, 'application/json');
-  });
-
-  restartBtn.addEventListener('click', ()=>{ window.location.reload(); });
-
-  function shuffle(a){
-    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-    return a;
-  }
-  function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
-  function interleaveRandom(base,inject){
-    const out=[...base];
-    inject.forEach(it=>{ const pos = Math.floor(Math.random()*(out.length+1)); out.splice(pos,0,it); });
-    return out;
-  }
-  function escapeCsv(x){
-    const s = String(x===undefined?'':x);
-    if(/[",\n]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
-    return s;
-  }
-  function ts(){ return new Date().toISOString().replace(/[:.]/g,'-'); }
-  function downloadText(text, name, type){
-    const blob = new Blob([text], {type});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = name; a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
-  }
-  function parseCsv(txt){
-    // very small CSV parser for AI CSV: expects header row with filename,ai_label,ai_prob,explainer_url
-    const lines = txt.split(/
-?
-/).filter(Boolean);
-    if(lines.length<2) return {};
-    const hdr = splitCsvLine(lines[0]).map(h=>h.trim().toLowerCase());
-    const idx = {
-      filename: hdr.indexOf('filename'),
-      ai_label: hdr.indexOf('ai_label'),
-      ai_prob: hdr.indexOf('ai_prob'),
-      explainer_url: hdr.indexOf('explainer_url')
-    };
-    const map={};
-    for(let i=1;i<lines.length;i++){
-      const parts = splitCsvLine(lines[i]);
-      const key = parts[idx.filename];
-      if(!key) continue;
-      map[key] = {
-        ai_label: parts[idx.ai_label]||'',
-        ai_prob: parts[idx.ai_prob]||'',
-        explainer_url: parts[idx.explainer_url]||''
-      };
-    }
-    return map;
-  }
-  function parseGenericCsv(txt){
-    // Robust CSV: handle BOM, Windows/Mac newlines, comma/semicolon delimiter
-    const lines = txt.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(Boolean);
-    if(lines.length===0) return {header:[], rows:[], urlIdx:-1, nameIdx:-1};
-    const sniff = s => (s.split(";").length > s.split(",").length ? ";" : ",");
-    const delim = sniff(lines[0]);
-    const header = splitCsvLine(lines[0], delim).map(s=>s.replace(/^\ufeff/, '').trim().toLowerCase());
-    let urlIdx  = header.indexOf('url');      if(urlIdx===-1)  urlIdx  = 0;
-    let nameIdx = header.indexOf('filename'); if(nameIdx===-1) nameIdx = 1;
-    const rows = [];
-    for(let i=1;i<lines.length;i++) rows.push(splitCsvLine(lines[i], delim));
-    return {header, rows, urlIdx, nameIdx, delim};
-  }
-  function splitCsvLine(line, delim=','){
-    const out=[]; let cur=''; let inQ=false;
-    for(let i=0;i<line.length;i++){
-      const c=line[i];
-      if(inQ){
-        if(c==='"' && line[i+1]==='"'){ cur+='"'; i++; }
-        else if(c==='"'){ inQ=false; }
-        else cur+=c;
-      }else{
-        if(c===delim){ out.push(cur); cur=''; }
-        else if(c==='"'){ inQ=true; }
-        else cur+=c;
+  aiCsvInput.addEventListener('change', ()=>{
+    aiMap = {};
+    const f = aiCsvInput.files && aiCsvInput.files[0];
+    if(!f){ aiPill.textContent = 'AI CSV: none'; return; }
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const obj = parseGenericCsv(reader.result);
+      const h = obj.header;
+      const fn = h.indexOf('filename');
+      const lab= h.indexOf('ai_label');
+      const pr = h.indexOf('ai_prob');
+      const ex = h.indexOf('explainer_url');
+      if(fn===-1 || lab===-1){
+        alert('AI CSV must have filename,ai_label,(ai_prob optional)');
+        return;
       }
+      for(const r of obj.rows){
+        const name = r[fn];
+        if(!name) continue;
+        aiMap[name] = { ai_label: r[lab] || '', ai_prob: r[pr] || '', explainer_url: r[ex] || '' };
+      }
+      aiPill.textContent = `AI CSV: ${Object.keys(aiMap).length} rows`;
+    };
+    reader.readAsText(f);
+  });
+
+  // ---------- Session logic ----------
+  startBtn.addEventListener('click', ()=>{
+    if(!clips.length){ alert('Load clips first (local WAVs or clips.csv).'); return; }
+    const rater = (raterIdInput.value || '').trim();
+    if(!rater){ alert('Enter Rater ID'); return; }
+    let n = Math.max(1, Math.min(parseInt(clipsPerInput.value||'1',10), clips.length));
+    const repeatPct = Math.max(0, Math.min(50, parseInt(repeatInput.value||'0',10)));
+    const armLabel = armSel.value;
+
+    // sample n unique clips
+    const indices = shuffle([...Array(clips.length).keys()]).slice(0, n);
+    const items = indices.map((idx,i)=>({
+      clip_idx: idx,
+      arm: armLabel,
+      is_repeat: false,
+      show_ai: armLabel==='AI-Assisted' ? true :
+               armLabel==='Clinician-Only (Blind)' ? false :
+               (Math.random()<0.5)   // Mixed (half shown AI)
+    }));
+
+    // add repeats
+    const repeats = Math.round(n * (repeatPct/100));
+    if(repeats>0){
+      const pick = shuffle(indices.slice()).slice(0, repeats);
+      for(const p of pick){
+        items.push({
+          clip_idx: p, arm: armLabel, is_repeat: true,
+          show_ai: armLabel==='AI-Assisted' ? true :
+                   armLabel==='Clinician-Only (Blind)' ? false :
+                   (Math.random()<0.5)
+        });
+      }
+      shuffle(items);
     }
-    out.push(cur); return out.map(s=>s.trim());
+
+    session = { rater, items, started_at: new Date().toISOString() };
+    responses = new Array(items.length).fill(null);
+    renderCase(0);
+    window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'});
+  });
+
+  function renderCase(k){
+    const total = session.items.length;
+    if(k>=total){
+      renderEnd();
+      return;
+    }
+    const it = session.items[k];
+    const src = clips[it.clip_idx];
+    const meta = clipMeta[src.name] || {};
+    const ai  = aiMap[src.name] || {};
+
+    sessionUI.innerHTML = `
+      <div class="case-card">
+        <div class="case-top">
+          <div class="case-title">Case ${k+1} / ${total} ${it.is_repeat ? '<span class="pill">repeat</span>' : ''}</div>
+          <div class="muted">Rater: <b>${escapeHtml(session.rater)}</b> • Arm: <b>${escapeHtml(it.arm)}</b></div>
+        </div>
+
+        <div class="muted" style="margin:6px 0 8px;">
+          Clip: <b>${escapeHtml(src.name)}</b>
+          ${meta.gt_label ? ` • GT: <b>${escapeHtml(meta.gt_label)}</b>` : ''}
+        </div>
+
+        <audio id="player" controls preload="none" crossorigin="anonymous" src="${escapeHtml(src.url)}"></audio>
+
+        <div class="grid2" style="margin-top:8px;">
+          <div class="group">
+            <h3>Diagnosis (choose one)</h3>
+            <div class="choices" id="labelChoices">
+              ${['Normal','Systolic Murmur','Diastolic Murmur','Other','Artifact'].map(v=>`<div class="choice" data-v="${v}">${v}</div>`).join('')}
+            </div>
+          </div>
+
+          <div class="group">
+            <h3>Confidence & Quality</h3>
+            <div class="choices" id="confChoices">
+              ${['Low','Medium','High'].map(v=>`<div class="choice" data-v="${v}">${v}</div>`).join('')}
+            </div>
+            <div class="choices" id="qualChoices" style="margin-top:10px;">
+              ${['Poor','OK','Good'].map(v=>`<div class="choice" data-v="${v}">${v}</div>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top:8px;">
+          <div class="group">
+            <h3>Severity (optional)</h3>
+            <div class="choices" id="sevChoices">
+              ${['N/A','Mild','Moderate','Severe'].map(v=>`<div class="choice" data-v="${v}">${v}</div>`).join('')}
+            </div>
+          </div>
+
+          <div class="group ${it.show_ai ? 'ai-panel' : ''}">
+            <h3>AI Output ${it.show_ai ? '' : '(hidden in this case)'}</h3>
+            ${it.show_ai ? `
+              <div>AI label: <b>${escapeHtml(ai.ai_label || '—')}</b>
+              ${ai.ai_prob ? ` • p=${escapeHtml(ai.ai_prob)}` : ''}</div>
+              ${ai.explainer_url ? `<div style="margin-top:8px;"><img src="${escapeHtml(ai.explainer_url)}" alt="explainer" style="max-width:100%; border-radius:10px; border:1px solid #2a3a54;"/></div>` : ''}
+            ` : `
+              <div class="muted">This trial is blinded (no AI visible).</div>
+            `}
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top:14px; justify-content:flex-end;">
+          <button class="btn" id="replayBtn" title="Increase replay count">Replay (+1)</button>
+          <button class="btn primary" id="nextBtn">Submit & Next</button>
+        </div>
+      </div>
+    `;
+
+    // interaction logic
+    const sel = (rootId) => {
+      const root = document.getElementById(rootId);
+      let val = '';
+      root.querySelectorAll('.choice').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          root.querySelectorAll('.choice').forEach(e=>e.classList.remove('active'));
+          el.classList.add('active');
+          val = el.dataset.v;
+        });
+      });
+      return ()=>val;
+    };
+    const getLabel = sel('labelChoices');
+    const getConf  = sel('confChoices');
+    const getQual  = sel('qualChoices');
+    const getSev   = sel('sevChoices');
+
+    const player = document.getElementById('player');
+    let replays = 0;
+    const t0 = performance.now();
+
+    document.getElementById('replayBtn').addEventListener('click', ()=>{
+      try{ player.currentTime = 0; player.play(); }catch(e){}
+      replays++;
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', ()=>{
+      const label = getLabel();
+      if(!label){ alert('Please choose a diagnosis.'); return; }
+      const elapsed = Math.round((performance.now() - t0)/1000);
+      responses[k] = {
+        case_idx: k+1,
+        clip_name: src.name,
+        arm: it.arm,
+        is_repeat: it.is_repeat,
+        label: label,
+        severity: getSev() || '',
+        confidence: getConf() || '',
+        quality: getQual() || '',
+        used_expl: it.show_ai ? 1 : 0,
+        replay_count: replays,
+        elapsed_s: elapsed
+      };
+      renderCase(k+1);
+      window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'});
+    });
   }
-  function basename(u){ try{ return new URL(u).pathname.split('/').pop()||u; }catch{ return u; } }
-})();
+
+  function renderEnd(){
+    sessionUI.innerHTML = `
+      <div class="end-card">
+        <h2>Session complete 🎉</h2>
+        <p class="muted">Rater: <b>${escapeHtml(session.rater)}</b> • Started at: ${escapeHtml(session.started_at)}</p>
+        <div class="stack center" style="justify-content:center; margin-top:12px;">
+          <button class="btn primary" id="dlCsv">Download Responses (CSV)</button>
+          <button class="btn" id="resetBtn">Start New Session</button>
+        </div>
+      </div>
+    `;
+
+    const dlCsv = document.getElementById('dlCsv');
+    dlCsv.addEventListener('click', ()=>{
+      const header = ['rater','session_started','case_idx','clip_name','arm','is_repeat','label','severity','confidence','quality','used_expl','replay_count','elapsed_s','gt_label','ai_label','ai_prob'];
+      const rows = responses.filter(Boolean).map(r=>{
+        const meta = clipMeta[r.clip_name] || {};
+        const ai   = aiMap[r.clip_name]   || {};
+        return [
+          session.rater, session.started_at, r.case_idx, r.clip_name, r.arm, r.is_repeat,
+          r.label, r.severity, r.confidence, r.quality, r.used_expl, r.replay_count, r.elapsed_s,
+          meta.gt_label || '', ai.ai_label || '', ai.ai_prob || ''
+        ];
+      });
+      const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join(','))].join('\n');
+      downloadText(csv, `pcg_subjective_${session.rater}_${ts()}.csv`, 'text/csv');
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      responses = []; session = null; sessionUI.innerHTML = '';
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  }
+
+  function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 </script>
 </body>
 </html>

@@ -31,7 +31,7 @@
     input[type="file"]{ width:100%; }
     .btn{
       display:inline-flex; align-items:center; justify-content:center; gap:8px;
-      padding:12px 16px; border-radius:12px; border:1px solid #2a3a54; background:#0d1828; color:var(--text);
+      padding:12px 16px; border-radius:12px; border:1px solid #2a3a54; background:#0d1828; color:#e7eef7;
       cursor:pointer; transition:.15s transform ease, .2s background ease, .2s border ease;
     }
     .btn:active{ transform:scale(.98); }
@@ -149,15 +149,18 @@
   function downloadText(txt,name,type='text/plain'){ const b=new Blob([txt],{type}),u=URL.createObjectURL(b),a=document.createElement('a'); a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(u);a.remove();},0); }
   function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-  // Normalize Google Drive URLs to usercontent host (helps CORS)
-  function normalizeDriveUrl(u){
+  // Convert ANY Google Drive share link style to direct "usercontent" URL
+  function toDirectDriveUrl(u){
     try{
-      const url = new URL(u);
-      if ((url.hostname === 'drive.google.com' || url.hostname === 'docs.google.com') &&
-          url.pathname.startsWith('/uc')) {
-        const id = url.searchParams.get('id');
-        if (id) return `https://drive.usercontent.google.com/uc?id=${id}&export=download`;
-      }
+      // uc?...&id=FILE_ID (docs/drive)
+      let m = u.match(/(?:drive|docs)\.google\.com\/uc\?[^#]*[?&]id=([^&]+)/i);
+      if(m) return `https://drive.usercontent.google.com/uc?id=${m[1]}&export=download`;
+      // file/d/FILE_ID
+      m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+      if(m) return `https://drive.usercontent.google.com/uc?id=${m[1]}&export=download`;
+      // open?id=FILE_ID
+      m = u.match(/drive\.google\.com\/open\?id=([^&]+)/i);
+      if(m) return `https://drive.usercontent.google.com/uc?id=${m[1]}&export=download`;
     }catch(e){}
     return u;
   }
@@ -224,7 +227,7 @@
       });
 
       // STREAM DIRECTLY (normalize Drive URLs for CORS)
-      clips = list.map(item => ({ name:item.name, url: normalizeDriveUrl(item.url), file:null }));
+      clips = list.map(item => ({ name:item.name, url: toDirectDriveUrl(item.url), file:null }));
       loadedCountPill.textContent = `Loaded clips: ${clips.length}`;
       alert('Loaded ' + clips.length + ' remote clips (streaming).');
       console.log('Clips header:', header, 'Count:', clips.length);
@@ -381,6 +384,16 @@
     const player = document.getElementById('player');
     let replays = 0;
     const t0 = performance.now();
+
+    // Fallback link if audio fails (e.g., rare host CORS hiccup)
+    player.addEventListener('error', ()=>{
+      const fallback = document.createElement('div');
+      fallback.className = 'muted';
+      fallback.style.marginTop = '8px';
+      fallback.innerHTML = `Having trouble playing? <a href="${escapeHtml(src.url)}" target="_blank" rel="noopener">Open audio in a new tab</a>.`;
+      player.insertAdjacentElement('afterend', fallback);
+      console.warn('Audio playback failed, fallback link shown:', src.url);
+    });
 
     document.getElementById('replayBtn').addEventListener('click', ()=>{
       try{ player.currentTime = 0; player.play(); }catch(e){}

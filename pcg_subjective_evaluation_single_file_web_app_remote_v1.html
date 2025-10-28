@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PCG Subjective Evaluation</title>
+  <style>
+    :root{--bg:#0f172a;--card:#111827;--ink:#e5e7eb;--muted:#9ca3af;--accent:#22d3ee;--danger:#f43f5e}
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,Apple Color Emoji,Segoe UI Emoji}
+    body{margin:0;background:linear-gradient(180deg,#0b1020,#0f172a 40%);color:var(--ink)}
+    .wrap{max-width:980px;margin:24px auto;padding:16px}
+    .title{font-size:28px;font-weight:800;letter-spacing:.2px;margin:4px 0 16px}
+    .card{background:rgba(255,255,255,0.04);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:16px;margin:12px 0}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1 1 260px}
+    label.small{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type="number"], select, input[type="text"], input[type="file"], button, .pill{
+      width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:#0b1224;color:var(--ink)
+    }
+    button{cursor:pointer;border:1px solid rgba(34,211,238,.35);background:linear-gradient(180deg,#0e1a30,#0b1326);transition:transform .05s ease,box-shadow .15s ease}
+    button:hover{box-shadow:0 8px 24px rgba(34,211,238,.15)}
+    button:active{transform:translateY(1px)}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap}
+    .tag{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.1);color:var(--muted);font-size:12px}
+    .muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:10px 0}
+    .h2{font-size:18px;font-weight:700;margin:6px 0 2px}
+    .large{font-size:16px}
+    audio{width:100%}
+    .hidden{display:none}
+    .accent{color:var(--accent)}
+    .danger{color:var(--danger)}
+    .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:16px}
+    .pill{display:inline-flex;align-items:center;width:auto;padding:6px 10px}
+    .kps{display:flex;gap:8px;flex-wrap:wrap}
+    .kps .pill{background:#0b1224;border:1px solid rgba(255,255,255,.12)}
+    .progress{height:8px;background:#0b1224;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+    .bar{height:100%;background:linear-gradient(90deg,#22d3ee,#818cf8);width:0%}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">PCG Subjective Evaluation</div>
+
+    <!-- Admin / Setup -->
+    <div class="card" id="setupCard">
+      <div class="h2">1) Load PCG clips</div>
+      <div class="grid">
+        <div>
+          <label class="small">Select WAV files (multiple)</label>
+          <input id="fileInput" type="file" accept="audio/wav" multiple />
+        </div>
+        <div>
+          <label class="small">Optional AI outputs (CSV: filename,ai_label,ai_prob,explainer_url)</label>
+          <input id="aiCsvInput" type="file" accept=".csv" />
+        </div>
+        <div>
+          <label class="small">Clips CSV (remote URLs): columns url,filename</label>
+          <input id="clipsCsvInput" type="file" accept=".csv" />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="h2">2) Session settings</div>
+      <div class="grid">
+        <div>
+          <label class="small">Rater ID (e.g., doc01)</label>
+          <input id="raterId" type="text" placeholder="doc01" />
+        </div>
+        <div>
+          <label class="small">Clips per session</label>
+          <input id="nClips" type="number" min="1" max="200" value="30" />
+        </div>
+        <div>
+          <label class="small">Repeat percentage (for intra-rater reliability)</label>
+          <input id="repeatPct" type="number" min="0" max="50" value="10" />
+        </div>
+        <div>
+          <label class="small">Arm / Condition</label>
+          <select id="arm">
+            <option value="blind">Clinician-Only (Blind)</option>
+            <option value="assisted">Clinician + AI (Assisted)</option>
+            <option value="mixed">Mixed (50/50 per session)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="btn-row">
+        <button id="startBtn">Start Session</button>
+        <span class="tag"><span>Loaded clips:</span><b id="loadedCount">0</b></span>
+        <span class="tag"><span>AI CSV:</span><b id="aiLoaded">none</b></span>
+      </div>
+      <div class="muted" style="margin-top:6px">All runs are local in your browser. No upload to any server.</div>
+    </div>
+
+    <!-- Session / Evaluation -->
+    <div class="card hidden" id="evalCard">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <div class="kps">
+          <span class="pill">Rater: <b id="raterTag" style="margin-left:6px"></b></span>
+          <span class="pill">Arm: <b id="armTag" style="margin-left:6px"></b></span>
+          <span class="pill">Item <span id="idxNow">0</span>/<span id="idxTotal">0</span></span>
+          <span class="pill">Replays: <span id="replays">0</span></span>
+          <span class="pill">Time: <span id="elapsed">0.0</span>s</span>
+        </div>
+        <div style="min-width:180px;flex:0 0 180px">
+          <div class="progress"><div class="bar" id="pbar"></div></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid">
+        <div class="col">
+          <div class="h2">PCG Audio</div>
+          <audio id="player" controls preload="auto"></audio>
+          <div class="muted" id="filenameHint" style="margin-top:6px"></div>
+        </div>
+        <div class="col">
+          <div class="h2">Label</div>
+          <label class="small">Primary label</label>
+          <select id="labelSel">
+            <option value="">— select —</option>
+            <option>Normal</option>
+            <option>Systolic Murmur</option>
+            <option>Diastolic Murmur</option>
+            <option>Other/Artifact</option>
+          </select>
+
+          <div class="row" style="margin-top:10px">
+            <div class="col">
+              <label class="small">Murmur severity</label>
+              <select id="severity">
+                <option>None</option>
+                <option>I/VI</option>
+                <option>II/VI</option>
+                <option>III/VI</option>
+                <option>IV/VI</option>
+                <option>V/VI</option>
+                <option>VI/VI</option>
+              </select>
+            </div>
+            <div class="col">
+              <label class="small">Confidence (1–5)</label>
+              <select id="confidence">
+                <option>1</option>
+                <option>2</option>
+                <option selected>3</option>
+                <option>4</option>
+                <option>5</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <div class="col">
+              <label class="small">Recording quality (1–5)</label>
+              <select id="quality">
+                <option>1</option>
+                <option>2</option>
+                <option selected>3</option>
+                <option>4</option>
+                <option>5</option>
+              </select>
+            </div>
+            <div class="col">
+              <label class="small">Used explanation?</label>
+              <select id="usedExpl">
+                <option>No</option>
+                <option>Yes</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="assistBlock" class="card" style="margin:12px 0;display:none">
+        <div class="h2">AI Assistance</div>
+        <div class="grid">
+          <div>
+            <div class="muted">AI Label</div>
+            <div id="aiLbl" class="large">—</div>
+          </div>
+          <div>
+            <div class="muted">AI Probability</div>
+            <div id="aiProb" class="large">—</div>
+          </div>
+        </div>
+        <img id="aiImg" alt="AI explanation" style="max-width:100%;margin-top:8px;border-radius:12px;border:1px solid rgba(255,255,255,.12);display:none" />
+      </div>
+
+      <div class="btn-row" style="justify-content:space-between">
+        <button id="prevBtn">◀ Prev</button>
+        <div class="btn-row">
+          <button id="saveBtn">Save & Next ▶</button>
+          <button id="endBtn" class="danger">Finish Session & Export</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export / Results -->
+    <div class="card hidden" id="exportCard">
+      <div class="h2">Session complete</div>
+      <p class="muted">Download your data below. Keep the CSV for analysis (McNemar, κ/α, etc.).</p>
+      <div class="btn-row">
+        <button id="dlCsv">Download Responses (CSV)</button>
+        <button id="dlJson">Download Session (JSON)</button>
+        <button id="restartBtn">Start New Session</button>
+      </div>
+    </div>
+
+    <div class="footer">Local-only tool • Built for rapid clinician labeling of PCG clips • v1.0</div>
+  </div>
+
+<script>
+(function(){
+  const fileInput = document.getElementById('fileInput');
+  const aiCsvInput = document.getElementById('aiCsvInput');
+  const clipsCsvInput = document.getElementById('clipsCsvInput');
+  const loadedCount = document.getElementById('loadedCount');
+  const aiLoaded = document.getElementById('aiLoaded');
+  const nClips = document.getElementById('nClips');
+  const repeatPct = document.getElementById('repeatPct');
+  const armSel = document.getElementById('arm');
+  const raterId = document.getElementById('raterId');
+  const startBtn = document.getElementById('startBtn');
+
+  const setupCard = document.getElementById('setupCard');
+  const evalCard = document.getElementById('evalCard');
+  const exportCard = document.getElementById('exportCard');
+
+  const raterTag = document.getElementById('raterTag');
+  const armTag = document.getElementById('armTag');
+  const idxNow = document.getElementById('idxNow');
+  const idxTotal = document.getElementById('idxTotal');
+  const pbar = document.getElementById('pbar');
+  const replaysSpan = document.getElementById('replays');
+  const elapsedSpan = document.getElementById('elapsed');
+
+  const player = document.getElementById('player');
+  const filenameHint = document.getElementById('filenameHint');
+  const labelSel = document.getElementById('labelSel');
+  const severitySel = document.getElementById('severity');
+  const confSel = document.getElementById('confidence');
+  const qualSel = document.getElementById('quality');
+  const usedExplSel = document.getElementById('usedExpl');
+
+  const assistBlock = document.getElementById('assistBlock');
+  const aiLbl = document.getElementById('aiLbl');
+  const aiProb = document.getElementById('aiProb');
+  const aiImg = document.getElementById('aiImg');
+
+  const prevBtn = document.getElementById('prevBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const endBtn = document.getElementById('endBtn');
+
+  const dlCsv = document.getElementById('dlCsv');
+  const dlJson = document.getElementById('dlJson');
+  const restartBtn = document.getElementById('restartBtn');
+
+  let clips = [];           // [{name, url, file}]
+  let aiMap = {};           // filename -> {ai_label, ai_prob, explainer_url}
+  let session = null;       // {rater, items:[{clip_idx, arm, is_repeat}], started_at}
+  let responses = [];       // per item index
+  let curIdx = 0;
+  let timer = null;
+  let startedAt = null;
+  let replayCount = 0;
+
+  fileInput.addEventListener('change', ()=>{
+    const files = Array.from(fileInput.files||[]);
+    clips = files.map(f=>({name:f.name,url:URL.createObjectURL(f),file:f}));
+    loadedCount.textContent = clips.length;
+  });
+
+  aiCsvInput.addEventListener('change', ()=>{
+    const f = aiCsvInput.files && aiCsvInput.files[0];
+    if(!f){aiLoaded.textContent='none'; return;}
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      aiMap = parseCsv(reader.result);
+      aiLoaded.textContent = Object.keys(aiMap).length + ' rows';
+    };
+    reader.readAsText(f);
+  });
+
+  // NEW: Load remote clips from CSV (url,filename)
+  clipsCsvInput.addEventListener('change', ()=>{
+    const f = clipsCsvInput.files && clipsCsvInput.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = async ()=>{
+      const rows = parseGenericCsv(reader.result);
+      const urlIdx = rows.header.indexOf('url');
+      const nameIdx = rows.header.indexOf('filename');
+      if(urlIdx===-1||nameIdx===-1){ alert('Clips CSV must have columns: url,filename'); return; }
+      const list = rows.rows.map(r=>({url:r[urlIdx], name:r[nameIdx]})).filter(x=>x.url);
+      // fetch as blobs so audio plays even with CORS disabled if same-origin; otherwise rely on direct URL
+      const fetched = [];
+      for(const item of list){
+        try{
+          const resp = await fetch(item.url, {mode:'cors'});
+          if(!resp.ok) throw new Error('HTTP '+resp.status);
+          const blob = await resp.blob();
+          fetched.push({name:item.name||basename(item.url), url:URL.createObjectURL(blob), file:null});
+        }catch(e){
+          console.warn('Fetch failed for', item.url, e);
+          // Fallback: try to play direct URL
+          fetched.push({name:item.name||basename(item.url), url:item.url, file:null});
+        }
+      }
+      clips = fetched;
+      loadedCount.textContent = clips.length;
+      alert('Loaded '+clips.length+' remote clips.');
+    };
+    reader.readAsText(f);
+  });
+
+  startBtn.addEventListener('click', ()=>{
+    if(clips.length===0){alert('Please select WAV files.');return;}
+    const n = clamp(parseInt(nClips.value||'30',10),1,Math.min(200,clips.length));
+    const rp = clamp(parseInt(repeatPct.value||'10',10),0,50);
+    const arm = armSel.value;
+    const rater = (raterId.value||'rater01').trim();
+
+    const baseIdxs = shuffle([...Array(clips.length).keys()]).slice(0,n);
+    const repeats = Math.floor(n*rp/100);
+    const repeatIdxs = shuffle(baseIdxs).slice(0,repeats);
+
+    let items = baseIdxs.map(i=>({clip_idx:i, arm:arm, is_repeat:false}));
+    if(arm==='mixed'){
+      items.forEach((it,k)=>{it.arm = (k%2===0)?'blind':'assisted'});
+    }
+    // insert repeats at random positions
+    const injected = repeatIdxs.map(i=>({clip_idx:i, arm: arm==='mixed'? (Math.random()<0.5?'blind':'assisted'):arm, is_repeat:true}));
+    items = interleaveRandom(items, injected);
+
+    session = {rater, started_at: new Date().toISOString(), items};
+    responses = new Array(items.length).fill(null);
+
+    raterTag.textContent = rater;
+    armTag.textContent = arm.charAt(0).toUpperCase()+arm.slice(1);
+    idxTotal.textContent = items.length;
+
+    setupCard.classList.add('hidden');
+    evalCard.classList.remove('hidden');
+
+    curIdx = 0;
+    loadItem(0);
+  });
+
+  function loadItem(k){
+    if(k<0||k>=session.items.length) return;
+    curIdx = k;
+    const it = session.items[k];
+    const clip = clips[it.clip_idx];
+
+    // reset UI
+    player.src = clip.url;
+    filenameHint.textContent = `File: ${clip.name}${it.is_repeat?' • duplicate (for reliability)':''}`;
+    labelSel.value = responses[k]?.label||'';
+    severitySel.value = responses[k]?.severity||'None';
+    confSel.value = responses[k]?.confidence||'3';
+    qualSel.value = responses[k]?.quality||'3';
+    usedExplSel.value = responses[k]?.used_expl||'No';
+
+    const ai = aiMap[clip.name];
+    const showAssist = (it.arm==='assisted') && ai;
+    assistBlock.style.display = showAssist ? 'block' : 'none';
+    aiLbl.textContent = showAssist ? (ai.ai_label||'—') : '—';
+    aiProb.textContent = showAssist ? (ai.ai_prob||'—') : '—';
+    if(showAssist && ai.explainer_url){ aiImg.src = ai.explainer_url; aiImg.style.display='block'; }
+    else { aiImg.style.display='none'; aiImg.removeAttribute('src'); }
+
+    // progress
+    idxNow.textContent = (k+1);
+    const pct = Math.round(((k)/session.items.length)*100);
+    pbar.style.width = pct+"%";
+
+    // timer & replays
+    if(timer) clearInterval(timer);
+    startedAt = performance.now();
+    replayCount = 0; replaysSpan.textContent = '0';
+    timer = setInterval(()=>{
+      const s = (performance.now()-startedAt)/1000;
+      elapsedSpan.textContent = s.toFixed(1);
+    }, 100);
+  }
+
+  player.addEventListener('play', ()=>{ replayCount++; replaysSpan.textContent = String(replayCount); });
+
+  prevBtn.addEventListener('click', ()=>{
+    savePartial(false);
+    loadItem(Math.max(0,curIdx-1));
+  });
+
+  saveBtn.addEventListener('click', ()=>{
+    if(!savePartial(true)) return;
+    const next = curIdx+1;
+    if(next<session.items.length) loadItem(next);
+    else finish();
+  });
+
+  endBtn.addEventListener('click', finish);
+
+  function savePartial(strict){
+    const label = labelSel.value;
+    if(strict && !label){ alert('Please select a primary label.'); return false; }
+    const elapsed_s = ((performance.now()-startedAt)/1000).toFixed(2);
+    responses[curIdx] = {
+      case_idx: curIdx+1,
+      clip_name: clips[session.items[curIdx].clip_idx].name,
+      arm: session.items[curIdx].arm,
+      is_repeat: session.items[curIdx].is_repeat,
+      label,
+      severity: severitySel.value,
+      confidence: confSel.value,
+      quality: qualSel.value,
+      used_expl: usedExplSel.value,
+      replay_count: replayCount,
+      elapsed_s
+    };
+    return true;
+  }
+
+  function finish(){
+    if(timer) clearInterval(timer);
+    pbar.style.width = '100%';
+    evalCard.classList.add('hidden');
+    exportCard.classList.remove('hidden');
+  }
+
+  dlCsv.addEventListener('click', ()=>{
+    const header = ['rater','session_started','case_idx','clip_name','arm','is_repeat','label','severity','confidence','quality','used_expl','replay_count','elapsed_s'];
+    const rows = responses.filter(Boolean).map(r=>[
+      session.rater, session.started_at, r.case_idx, r.clip_name, r.arm, r.is_repeat, r.label, r.severity, r.confidence, r.quality, r.used_expl, r.replay_count, r.elapsed_s
+    ]);
+    const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join(','))].join('\n');
+    downloadText(csv, `pcg_subjective_${session.rater}_${ts()}.csv`, 'text/csv');
+  });
+
+  dlJson.addEventListener('click', ()=>{
+    const blob = JSON.stringify({session, responses}, null, 2);
+    downloadText(blob, `pcg_subjective_${session.rater}_${ts()}.json`, 'application/json');
+  });
+
+  restartBtn.addEventListener('click', ()=>{ window.location.reload(); });
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+  function interleaveRandom(base,inject){
+    const out=[...base];
+    inject.forEach(it=>{ const pos = Math.floor(Math.random()*(out.length+1)); out.splice(pos,0,it); });
+    return out;
+  }
+  function escapeCsv(x){
+    const s = String(x===undefined?'':x);
+    if(/[",\n]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+    return s;
+  }
+  function ts(){ return new Date().toISOString().replace(/[:.]/g,'-'); }
+  function downloadText(text, name, type){
+    const blob = new Blob([text], {type});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  }
+  function parseCsv(txt){
+    // very small CSV parser for AI CSV: expects header row with filename,ai_label,ai_prob,explainer_url
+    const lines = txt.split(/?
+/).filter(Boolean);
+    if(lines.length<2) return {};
+    const hdr = splitCsvLine(lines[0]).map(h=>h.trim().toLowerCase());
+    const idx = {
+      filename: hdr.indexOf('filename'),
+      ai_label: hdr.indexOf('ai_label'),
+      ai_prob: hdr.indexOf('ai_prob'),
+      explainer_url: hdr.indexOf('explainer_url')
+    };
+    const map={};
+    for(let i=1;i<lines.length;i++){
+      const parts = splitCsvLine(lines[i]);
+      const key = parts[idx.filename];
+      if(!key) continue;
+      map[key] = {
+        ai_label: parts[idx.ai_label]||'',
+        ai_prob: parts[idx.ai_prob]||'',
+        explainer_url: parts[idx.explainer_url]||''
+      };
+    }
+    return map;
+  }
+  function parseGenericCsv(txt){
+    const lines = txt.split(/?
+/).filter(Boolean);
+    if(lines.length===0) return {header:[], rows:[]};
+    const header = splitCsvLine(lines[0]).map(s=>s.trim().toLowerCase());
+    const rows = [];
+    for(let i=1;i<lines.length;i++) rows.push(splitCsvLine(lines[i]));
+    return {header, rows};
+  }
+  function splitCsvLine(line){
+    const out=[]; let cur=''; let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(inQ){
+        if(c==='"' && line[i+1]==='"'){ cur+='"'; i++; }
+        else if(c==='"'){ inQ=false; }
+        else cur+=c;
+      }else{
+        if(c===','){ out.push(cur); cur=''; }
+        else if(c==='"'){ inQ=true; }
+        else cur+=c;
+      }
+    }
+    out.push(cur); return out.map(s=>s.trim());
+  }
+  function basename(u){ try{ return new URL(u).pathname.split('/').pop()||u; }catch{ return u; } }
+})();
+</script>
+</body>
+</html>

@@ -308,23 +308,14 @@
         rows.header.forEach((h,idx)=>{ if(h!=='url' && h!=='filename') meta[h] = r[idx]; });
         clipMeta[name] = meta;
       });
-      // fetch as blobs so audio plays even with CORS disabled if same-origin; otherwise rely on direct URL
-      const fetched = [];
-      for(const item of list){
-        try{
-          const resp = await fetch(item.url, {mode:'cors'});
-          if(!resp.ok) throw new Error('HTTP '+resp.status);
-          const blob = await resp.blob();
-          fetched.push({name:item.name||basename(item.url), url:URL.createObjectURL(blob), file:null});
-        }catch(e){
-          console.warn('Fetch failed for', item.url, e);
-          // Fallback: try to play direct URL
-          fetched.push({name:item.name||basename(item.url), url:item.url, file:null});
-        }
-      }
-      clips = fetched;
+      // STREAM DIRECTLY: don't prefetch; just use the URLs
+      clips = list.map(item => ({
+        name: item.name || basename(item.url),
+        url: item.url,
+        file: null
+      }));
       loadedCount.textContent = clips.length;
-      alert('Loaded '+clips.length+' remote clips.');
+      alert('Loaded ' + clips.length + ' remote clips (streaming).');
     };
     reader.readAsText(f);
   });
@@ -453,10 +444,7 @@
         meta.gt_label || '', ai.ai_label || '', ai.ai_prob || ''
       ];
     });
-    const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join('
-').replace(/
-/g, ''))].join('
-');
+    const csv = [header.join(','), ...rows.map(x=>x.map(escapeCsv).join(','))].join('\n');
     downloadText(csv, `pcg_subjective_${session.rater}_${ts()}.csv`, 'text/csv');
   });
 
